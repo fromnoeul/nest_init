@@ -3,7 +3,9 @@ import {
   Controller,
   Get,
   Post,
+  Req,
   UseFilters,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { CatsService } from './cats.service';
@@ -12,17 +14,26 @@ import { SuccessInterceptor } from '../common/interceptors/success.interceptor';
 import { CatRequestDto } from './dto/cats.request.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ReadOnlyCatDto } from './dto/cat.dto';
+import { AuthService } from 'src/auth/auth.service';
+import { LoginRequestDto } from 'src/auth/dto/login.request.dto';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
+import { Request } from 'express';
+import { CurrentUser } from 'src/common/decorators/user.decorator';
 
 @Controller('cats')
 @UseInterceptors(SuccessInterceptor)
 @UseFilters(HttpExceptionFilter)
 export class CatsController {
-  constructor(private readonly catsService: CatsService) {}
+  constructor(
+    private readonly catsService: CatsService,
+    private readonly authService: AuthService,
+  ) {}
 
   @ApiOperation({ summary: 'Get current Cat' })
+  @UseGuards(JwtAuthGuard)
   @Get()
-  getCurrentCat() {
-    return 'get current cat';
+  getCurrentCat(@CurrentUser() cat) {
+    return cat.readOnlyData;
   }
 
   @ApiOperation({ summary: 'Sign up' })
@@ -42,14 +53,8 @@ export class CatsController {
 
   @ApiOperation({ summary: 'Sign in' })
   @Post('login')
-  login() {
-    return 'login';
-  }
-
-  @ApiOperation({ summary: 'Sign out' })
-  @Post('logout')
-  logout() {
-    return 'logout';
+  login(@Body() body: LoginRequestDto) {
+    return this.authService.jwtLogin(body);
   }
 
   @ApiOperation({ summary: 'Upload image' })
