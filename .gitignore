@@ -1,3 +1,9 @@
+#frontend example code
+/frontend
+
+#uploads
+/upload
+
 # environment variables
 *.env
 
